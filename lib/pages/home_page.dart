@@ -1,136 +1,99 @@
 import 'package:flutter/material.dart';
-import 'schedule_result_page.dart';
-import 'package:schedule_generator/services/gemini_service.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'add_schedule.dart';
+import 'scedule_procces.dart';
+import 'history_shedule.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final List<Map<String, dynamic>> tasks = [];
-  final TextEditingController taskController = TextEditingController();
-  final TextEditingController durationController = TextEditingController();
-  String? priority;
-  bool isLoading = false;
+class _HomePageState extends State<HomePage> {
+  final List<Map<String, dynamic>> tasks = []; // Semua tugas
+  final List<Map<String, dynamic>> completedTasks = []; // Tugas yang selesai
 
-  void _addTask() {
-    if (taskController.text.isNotEmpty &&
-        durationController.text.isNotEmpty &&
-        priority != null) {
-      setState(() {
-        tasks.add({
-          "name": taskController.text,
-          "priority": priority!,
-          "duration": int.tryParse(durationController.text) ?? 30,
-          "deadline": "Tidak Ada"
-        });
-      });
-      taskController.clear();
-      durationController.clear();
-    }
+  void addTask(Map<String, dynamic> task) {
+    setState(() {
+      tasks.add(task);
+    });
   }
 
-  void _clearTasks() {
-    setState(() => tasks.clear());
+  void clearTasks() {
+    setState(() {
+      tasks.clear();
+      completedTasks.clear(); // Kosongkan juga history
+    });
   }
 
-  Future<void> _generateSchedule() async {
-    if (tasks.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("⚠ Harap tambahkan tugas terlebih dahulu!")),
-      );
-      return;
-    }
+  void removeTask(int index) {
+    setState(() {
+      tasks.removeAt(index);
+    });
+  }
 
-    setState(() => isLoading = true);
-
-    try {
-      String schedule = await GeminiService.generateSchedule(tasks);
-      await Future.delayed(Duration(seconds: 1));
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ScheduleResultPage(scheduleResult: schedule),
-        ),
-      ).then((_) {
-        setState(() => isLoading = false);
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal menghasilkan jadwal: $e")),
-      );
-      setState(() => isLoading = false);
-    }
+  void markTaskAsCompleted(Map<String, dynamic> task) {
+    setState(() {
+      completedTasks.add(task); // Tambahkan ke daftar history
+      tasks.remove(task); // Hapus dari daftar aktif
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Schedule Generator")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: taskController,
-              decoration: InputDecoration(labelText: "Nama Tugas"),
-            ),
-            TextField(
-              controller: durationController,
-              decoration: InputDecoration(labelText: "Durasi (menit)"),
-              keyboardType: TextInputType.number,
-            ),
-            DropdownButton<String>(
-              value: priority,
-              hint: Text("Pilih Prioritas"),
-              onChanged: (value) => setState(() => priority = value),
-              items: ["Tinggi", "Sedang", "Rendah"]
-                  .map((priorityMember) => DropdownMenuItem(
-                      value: priorityMember, child: Text(priorityMember)))
-                  .toList(),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: _addTask,
-                  child: Text("Tambahkan Tugas"),
-                ),
-                ElevatedButton(
-                  onPressed: _clearTasks,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: Text("Hapus Semua",
-                      style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: tasks.length,
-                itemBuilder: (context, index) {
-                  final task = tasks[index];
-                  return Card(
-                    elevation: 3,
-                    margin: EdgeInsets.symmetric(vertical: 6),
-                    child: ListTile(
-                      title: Text("${task['name']}"),
-                      subtitle: Text(
-                          "Prioritas: ${task['priority']} | Durasi: ${task['duration']} menit"),
-                    ),
-                  );
-                },
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: Colors.grey[200],
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
-            isLoading
-                ? CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _generateSchedule,
-                    child: Text("Cek Rekomendasi Jadwal"),
-                  ),
+          ),
+          title: Text(
+            "Schedule Manager",
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () {},
+            ),
+          ],
+          bottom: const TabBar(
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            tabs: [
+              Tab(icon: Icon(Icons.add), text: "Add"),
+              Tab(icon: Icon(Icons.calendar_today), text: "Schedule"),
+              Tab(icon: Icon(Icons.history), text: "History"),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            AddSchedule(onTaskAdded: addTask, onClearTasks: clearTasks),
+            ScheduleProcess(
+              tasks: tasks,
+              onClearTasks: clearTasks,
+              onRemoveTask: removeTask,
+              onTaskCompleted: markTaskAsCompleted, // Kirim fungsi ini ke ScheduleProcess
+            ),
+            HistoryShedule(completedTasks: completedTasks), // Kirim daftar tugas selesai
           ],
         ),
       ),

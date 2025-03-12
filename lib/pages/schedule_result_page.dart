@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ScheduleResultPage extends StatelessWidget {
   final String scheduleResult;
@@ -7,38 +8,78 @@ class ScheduleResultPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    List<String> scheduleLines =
+        scheduleResult.split("\n").where((line) => line.trim().isNotEmpty).toList();
+
     return Scaffold(
-      appBar: AppBar(title: Text("Hasil Jadwal")),
+      appBar: AppBar(
+        title: Text(
+          "📅 Jadwal Anda",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "📅 Jadwal Anda:",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              "Berikut adalah jadwal yang direkomendasikan:",
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
             ),
-            Divider(),
+            const SizedBox(height: 10),
             Expanded(
-              child: ListView.builder(
-                itemCount: scheduleResult.split("\n").length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: SelectableText(
-                      scheduleResult.split("\n")[index],
-                      style: TextStyle(fontSize: 16),
+              child: scheduleLines.isEmpty
+                  ? Center(
+                      child: Text(
+                        "Tidak ada jadwal yang tersedia.",
+                        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: scheduleLines.length,
+                      itemBuilder: (context, index) {
+                        return Card(
+                          elevation: 4,
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(12),
+                            leading: Icon(
+                              Icons.access_time_rounded,
+                              color: Colors.blueAccent,
+                            ),
+                            title: Text(
+                              scheduleLines[index],
+                              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Center(
-              child: ElevatedButton(
-                onPressed: () =>
-                    Navigator.pop(context), // Kembali ke HomeScreen
-                child: Text("🔙 Kembali"),
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back),
+                label: Text(
+                  "Kembali",
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
               ),
             ),
           ],
